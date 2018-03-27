@@ -53,6 +53,7 @@ type record M3UA_Entity
 {
   M3UA_CommStatus commStatus optional,
   integer sCTP_Assoc_ID optional,
+  M3UA_Routing_Context rctx optional,
   SCTP_Association_Address assoc
 }
 
@@ -461,11 +462,23 @@ template M3UA_Protocol_Data t_M3UA_Protocol_Data
 // Dynamic part of the M3UA emulation
 //***********************************
 
-function f_M3UA_Emulation(SCTP_Association_Address pl_Boot) runs on M3UA_CT
+private template (value) M3UA_Routing_Context t_RoutingContext(OCT4 rctx) := {
+	tag := '0006'O,
+	lengthInd := 8,
+	routingContext := rctx
+}
+
+function f_M3UA_Emulation(SCTP_Association_Address pl_Boot,
+			  template (omit) integer rctx := omit) runs on M3UA_CT
 {
   // Initialize parameters from the test case.
   v_Entity.assoc := pl_Boot;
   v_Entity.commStatus := aSP_Down_initial_State;
+  if (istemplatekind(rctx, "omit")) {
+    v_Entity.rctx := omit;
+  } else {
+    v_Entity.rctx := valueof(t_RoutingContext(int2oct(valueof(rctx), 4)));
+  }
 
   // At this point, we assume that the ports are already connected and mapped
   // properly by the user.
@@ -581,7 +594,7 @@ function f_Send_MTP3_TRANSFERreq(ASP_MTP3_TRANSFERreq pl_ASP_MTP3_TRANSFERreq)
             (valueof
              (t_PDU_M3UA_DATA
               (omit,
-               omit,
+               v_Entity.rctx,
                t_M3UA_Protocol_Data
                  (int2oct(pl_ASP_MTP3_TRANSFERreq.opc, 4),               // OPC
                   int2oct(pl_ASP_MTP3_TRANSFERreq.dpc, 4),               // DPC
@@ -871,7 +884,7 @@ altstep as_handleM3UA_timers() runs on M3UA_CT
         (t_S_SCTP_Send
          (v_Entity.sCTP_Assoc_ID,
           0,
-          enc_PDU_M3UA(valueof(t_PDU_M3UA_ASPAC(omit, omit, omit))),
+          enc_PDU_M3UA(valueof(t_PDU_M3UA_ASPAC(omit, v_Entity.rctx, omit))),
           tsp_SCTP_PayloadProtocolID));
       v_Entity.commStatus := aSP_Inact_ASPAC_Sent;
       if (tsp_logVerbose) {
@@ -1136,7 +1149,7 @@ function f_handle_M3UA_msg(PDU_M3UA pl_PDU_M3UA) runs on M3UA_CT
         (t_S_SCTP_Send
          (v_Entity.sCTP_Assoc_ID,
           0,
-          enc_PDU_M3UA(valueof(t_PDU_M3UA_ASPAC(omit, omit, omit))),
+          enc_PDU_M3UA(valueof(t_PDU_M3UA_ASPAC(omit, v_Entity.rctx, omit))),
           tsp_SCTP_PayloadProtocolID));
       // The state changes again after sending the M3UA_ASPAC message.
       v_Entity.commStatus := aSP_Inact_ASPAC_Sent;
