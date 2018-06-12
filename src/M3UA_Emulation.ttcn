@@ -389,6 +389,18 @@ template PDU_M3UA t_PDU_M3UA_Beat_Ack
   }
 }
 
+template PDU_M3UA t_PDU_M3UA_NOTIFY
+ (in template octetstring parameters) :=
+{
+  m3UA_NOTIFY := {
+    version := '01'O,
+    reserved := '00'O,
+    messageClassAndType := '0001'O,
+    messageLength := 0,
+    messageParameters := parameters
+  }
+}
+
 template PDU_M3UA t_PDU_M3UA_DATA
   (in template M3UA_Network_Appearance pl_network_Appearance,
    in template M3UA_Routing_Context pl_routing_Context,
@@ -1079,7 +1091,7 @@ function f_handle_M3UA_msg(PDU_M3UA pl_PDU_M3UA) runs on M3UA_CT
     }
   }
   // In server mode we can receive M3UA_ASPUP messages.  The answer will be a
-  // M3UA_ASPUP_Ack message to the client.
+  // M3UA_ASPUP_Ack message to the client, followed by a NTFY if AS state changed.
   else if (ischosen(pl_PDU_M3UA.m3UA_ASPUP)) {
     if (((v_Entity.commStatus == aSP_Down_commUP_Received) or
         (v_Entity.commStatus == aSP_Down_ASPUP_Sent)) and
@@ -1093,8 +1105,22 @@ function f_handle_M3UA_msg(PDU_M3UA pl_PDU_M3UA) runs on M3UA_CT
           tsp_SCTP_PayloadProtocolID));
       if (tsp_logVerbose) {
         log("M3UA_ASPUP received -> M3UA_ASPUP_Ack sent");
-        log("Association #", v_Entity.sCTP_Assoc_ID, " state changed to: ",
-          v_Entity.commStatus);
+        log("Association #", v_Entity.sCTP_Assoc_ID, " state changed to: ", v_Entity.commStatus);
+      }
+
+      /* AS state change -> send NTFY (see RFC4666 4.3.4.5) */
+      SCTP_PORT.send
+        (t_S_SCTP_Send
+          (v_Entity.sCTP_Assoc_ID,
+            0,
+            enc_PDU_M3UA
+              (valueof
+                (t_PDU_M3UA_NOTIFY
+                  /* tag 0xd, len 8, type AS-State_Change (1), Status Information AS-INACTIVE (2) */
+                  ('000d000800010002'O))),
+             tsp_SCTP_PayloadProtocolID));
+      if (tsp_logVerbose) {
+        log("AS state changed -> M3UA_NOTIFY sent");
       }
     }
     else {
@@ -1201,6 +1227,21 @@ function f_handle_M3UA_msg(PDU_M3UA pl_PDU_M3UA) runs on M3UA_CT
 	       pl_PDU_M3UA.m3UA_ASPAC.messageParameters.routing_Context))),
 	  tsp_SCTP_PayloadProtocolID));
       // MTP3_SP_PORT.send(ASP_MTP3_RESUME : {});
+
+      /* AS state change -> send NTFY (see RFC4666 4.3.4.5) */
+      SCTP_PORT.send
+        (t_S_SCTP_Send
+          (v_Entity.sCTP_Assoc_ID,
+            0,
+            enc_PDU_M3UA
+              (valueof
+                (t_PDU_M3UA_NOTIFY
+                  /* tag 0xd, len 8, type AS-State_Change (1), Status Information AS-ACTIVE (1) */
+                  ('000d000800010001'O))),
+             tsp_SCTP_PayloadProtocolID));
+      if (tsp_logVerbose) {
+        log("AS state changed -> M3UA_NOTIFY sent");
+      }
     }
     else {
       if (tsp_logVerbose) {
