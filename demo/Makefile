@@ -2,7 +2,7 @@
 # of the TTCN-3 Test Executor version 1.7.pre1 build 7
 # for Gabor Bettesch (ethgbh@mwux018) on Tue May 29 11:06:47 2007
 
-# Copyright 2000-2007 Test Competence Center, Ericsson R & D, Hungary
+# Copyright (c) 2000-2019 Ericsson Telecom AB
 # For trouble reporting use the tool MTTSMS.
 # For TR writers guide please visit the web page: http://ttcn.ericsson.se
 
