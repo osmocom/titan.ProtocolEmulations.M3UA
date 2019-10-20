@@ -390,14 +390,22 @@ template PDU_M3UA t_PDU_M3UA_Beat_Ack
 }
 
 template PDU_M3UA t_PDU_M3UA_NOTIFY
- (in template octetstring parameters) :=
+  (in template M3UA_Status pl_status,
+   in template M3UA_ASP_Identifier pl_aSP_Identifier,
+   in template M3UA_Routing_Context pl_routing_Context,
+   in template M3UA_Info_String pl_info_String) :=
 {
   m3UA_NOTIFY := {
     version := '01'O,
     reserved := '00'O,
     messageClassAndType := '0001'O,
     messageLength := 0,
-    messageParameters := parameters
+    messageParameters := {
+      status := pl_status,
+      aSP_Identifier := pl_aSP_Identifier,
+      routing_Context := pl_routing_Context,
+      info_String := pl_info_String
+    }
   }
 }
 
@@ -478,6 +486,13 @@ private template (value) M3UA_Routing_Context t_RoutingContext(OCT4 rctx) := {
 	tag := '0006'O,
 	lengthInd := 8,
 	routingContext := rctx
+}
+
+private template (value) M3UA_Status t_Status(OCT2 status_type, OCT2 status_info) := {
+	tag := '000d'O,
+	lengthInd := 8,
+	statusType := status_type,
+	statusInfo := status_info
 }
 
 function f_M3UA_Emulation(SCTP_Association_Address pl_Boot,
@@ -1116,8 +1131,8 @@ function f_handle_M3UA_msg(PDU_M3UA pl_PDU_M3UA) runs on M3UA_CT
             enc_PDU_M3UA
               (valueof
                 (t_PDU_M3UA_NOTIFY
-                  /* tag 0xd, len 8, type AS-State_Change (1), Status Information AS-INACTIVE (2) */
-                  ('000d000800010002'O))),
+                  /* type AS-State_Change (1), Status Information AS-INACTIVE (2) */
+                  (t_Status('0001'O, '0002'O), omit, v_Entity.rctx, omit))),
              tsp_SCTP_PayloadProtocolID));
       if (tsp_logVerbose) {
         log("AS state changed -> M3UA_NOTIFY sent");
@@ -1237,7 +1252,7 @@ function f_handle_M3UA_msg(PDU_M3UA pl_PDU_M3UA) runs on M3UA_CT
               (valueof
                 (t_PDU_M3UA_NOTIFY
                   /* tag 0xd, len 8, type AS-State_Change (1), Status Information AS-ACTIVE (1) */
-                  ('000d000800010001'O))),
+                  (t_Status('0001'O, '0001'O), omit, v_Entity.rctx, omit))),
              tsp_SCTP_PayloadProtocolID));
       if (tsp_logVerbose) {
         log("AS state changed -> M3UA_NOTIFY sent");
