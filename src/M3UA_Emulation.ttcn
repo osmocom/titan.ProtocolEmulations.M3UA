@@ -78,7 +78,7 @@ type port MTP3asp_SP_PT_Int message
   out ASP_MTP3_TRANSFERind;
   // out ASP_MTP3_PAUSE;
   // out ASP_MTP3_RESUME;
-  // out ASP_MTP3_STATUS;  
+  // out ASP_MTP3_STATUS;
 } with {
   extension "internal"
 }
@@ -104,7 +104,7 @@ type component M3UA_CT
   timer T_ASPAC_resend := tsp_ASPAC_Resend_Timer;
   timer T_Heartbeat := tsp_Heartbeat_Timer;
   timer T_Assoc_restart := tsp_Assoc_Restart_Timer;
-  
+
   // Port declarations.
   port MTP3asp_SP_PT_Int MTP3_SP_PORT; // Port towards MTP3/M3UA.
   port SCTPasp_PT SCTP_PORT;           // Port towards target through SCTP.
@@ -445,7 +445,7 @@ template PDU_M3UA t_PDU_M3UA_DAVA
       routing_Context := pl_routing_Context,
       affected_Point_Codes := pl_affected_Point_Codes,
       info_String := pl_info_String
-    }    
+    }
   }
 }
 //**************************
@@ -512,7 +512,7 @@ function f_M3UA_Emulation(SCTP_Association_Address pl_Boot,
   log("*************************************************");
   log("M3UA emulation initiated, the test can be started");
   log("*************************************************");
-  
+
   f_Initialize_SCTP();
 
   // Start the main function in an infinte loop.
@@ -683,7 +683,7 @@ altstep as_SCTP_CommunicationUp() runs on M3UA_CT
         if (tsp_logVerbose) {
           log("Association #", v_Entity.sCTP_Assoc_ID, " state changed to: ",
 	      v_Entity.commStatus);
-	} 
+	}
 	if ((not tsp_M3UA_Server_Mode) and
 	    (tsp_SCTP_PayloadProtocolID == 3)) { // M3UA
 	  f_ASPUP_Sending();
@@ -823,7 +823,7 @@ altstep as_Unexpected_SCTP_Events() runs on M3UA_CT
     -> value v_ASP_SCTP_SHUTDOWN_EVENT {
     if (f_Assoc_Exists(v_ASP_SCTP_SHUTDOWN_EVENT.client_id)) {
       if (v_Entity.commStatus == aSP_Active) {
-	// MTP3_SP_PORT.send(ASP_MTP3_PAUSE : {});	
+	// MTP3_SP_PORT.send(ASP_MTP3_PAUSE : {});
       }
       v_Entity.commStatus := aSP_Down_sCTP_Initialize_Done;
       if (tsp_logVerbose) {
@@ -903,7 +903,7 @@ altstep as_handleM3UA_timers() runs on M3UA_CT
     T_ASPUP_resend.start;
     repeat;
   }
-  
+
   [] T_ASPAC_resend.timeout {
     if ((v_Entity.commStatus == aSP_Inactive) or
         (v_Entity.commStatus == aSP_Inact_ASPAC_Sent)) {
@@ -922,7 +922,7 @@ altstep as_handleM3UA_timers() runs on M3UA_CT
     T_ASPAC_resend.start;
     repeat;
   }
-  
+
   [tsp_Enable_M3UA_Heartbeat] T_Heartbeat.timeout {
     if (v_Entity.commStatus == aSP_Active) {
       SCTP_PORT.send
