@@ -599,12 +599,12 @@ function f_M3UA_ScanEvents() runs on M3UA_CT
       f_Send_MTP3_TRANSFERreq(vl_ASP_MTP3_TRANSFERreq);
       repeat;
     }
-    [] as_SCTP_CommunicationUp()
-    [] as_SCTP_DataArrive()
-    [] as_SCTP_Connected()
-    [] as_Unexpected_SCTP_Events()
-    [] as_handleM3UA_timers()
-    [] as_handleSCTP_timers()
+    [] as_SCTP_CommunicationUp();
+    [] as_SCTP_DataArrive();
+    [] as_SCTP_Connected();
+    [] as_Unexpected_SCTP_Events();
+    [] as_handleM3UA_timers();
+    [] as_handleSCTP_timers();
   }
 }
 
