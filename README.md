@@ -6,7 +6,7 @@
 
 ## Source code of the TTCN-3 compiler and executor
 
-* https://github.com/eclipse/titan.core
+* https://gitlab.eclipse.org/eclipse/titan/titan.core
 
 ## Contacts
 If you found a bug or have a feature request, contact the project developers:
