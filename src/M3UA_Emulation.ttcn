@@ -977,7 +977,7 @@ function f_ASPUP_Sending() runs on M3UA_CT
 // in a table, the index of it should be returned instead of a boolean value.
 function f_Assoc_Exists(integer pl_assocID) runs on M3UA_CT return boolean
 {
-  if (v_Entity.sCTP_Assoc_ID == pl_assocID) {
+  if (ispresent(v_Entity.sCTP_Assoc_ID) and v_Entity.sCTP_Assoc_ID == pl_assocID) {
     return true;
   }
   else {
