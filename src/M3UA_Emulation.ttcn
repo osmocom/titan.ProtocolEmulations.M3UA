@@ -76,9 +76,9 @@ type port MTP3asp_SP_PT_Int message
 {
   in ASP_MTP3_TRANSFERreq;
   out ASP_MTP3_TRANSFERind;
-  // out ASP_MTP3_PAUSE;
-  // out ASP_MTP3_RESUME;
-  // out ASP_MTP3_STATUS;
+  out ASP_MTP3_PAUSE;
+  out ASP_MTP3_RESUME;
+  out ASP_MTP3_STATUS;
 } with {
   extension "internal"
 }
@@ -990,6 +990,8 @@ function f_Assoc_Exists(integer pl_assocID) runs on M3UA_CT return boolean
 
 function f_handle_M3UA_msg(PDU_M3UA pl_PDU_M3UA) runs on M3UA_CT
 {
+  var M3UA_Point_Codes aff_pcs;
+
   if (ischosen(pl_PDU_M3UA.m3UA_DATA)) {
     if (v_Entity.commStatus == aSP_Active) {
       // Send ASP_MTP3_TRANSFERind message.
@@ -1052,12 +1054,30 @@ function f_handle_M3UA_msg(PDU_M3UA pl_PDU_M3UA) runs on M3UA_CT
   }
   else if (ischosen(pl_PDU_M3UA.m3UA_DUNA)) {
     if (tsp_logVerbose) {
-      log("Received M3UA_DUNA -> discard");
+      log("Received M3UA_DUNA -> MTP-PAUSE.ind");
+    }
+    aff_pcs := pl_PDU_M3UA.m3UA_DUNA.messageParameters.affected_Point_Codes.pointCodes;
+    for (var integer i := 0; i < lengthof(aff_pcs); i := i + 1) {
+      if (aff_pcs[i].mask != '00'O) {
+        /* TODO: Submit one MTP-PAUSE for each point code matching the mask. */
+        log("Received M3UA_DUNA -> Affected Point Code ", aff_pcs[i], ", discarded due to unsupported mask");
+        continue;
+      }
+      MTP3_SP_PORT.send(ts_ASP_MTP3_PAUSE(oct2int(aff_pcs[i].affected_Point_Code)));
     }
   }
   else if (ischosen(pl_PDU_M3UA.m3UA_DAVA)) {
     if (tsp_logVerbose) {
-      log("Received M3UA_DAVA -> discard");
+      log("Received M3UA_DAVA -> MTP-RESUME.ind");
+    }
+    aff_pcs := pl_PDU_M3UA.m3UA_DAVA.messageParameters.affected_Point_Codes.pointCodes;
+    for (var integer i := 0; i < lengthof(aff_pcs); i := i + 1) {
+      if (aff_pcs[i].mask != '00'O) {
+        /* TODO: Submit one MTP-RESUME for each point code matching the mask. */
+        log("Received M3UA_DAVA -> Affected Point Code ", aff_pcs[i], ", discarded due to unsupported mask");
+        continue;
+      }
+      MTP3_SP_PORT.send(ts_ASP_MTP3_RESUME(oct2int(aff_pcs[i].affected_Point_Code)));
     }
   }
   // In server mode ASP_M3UA_DAUD messages can be received.  In response the
@@ -1091,13 +1111,48 @@ function f_handle_M3UA_msg(PDU_M3UA pl_PDU_M3UA) runs on M3UA_CT
     }
   }
   else if (ischosen(pl_PDU_M3UA.m3UA_SCON)) {
+    /* This field is not explicitly listed in Q.704 15.17.5, but it is
+     * explicitly described as one of four options in:
+     * Q.701 "TABLE 1" and 8.4
+     * Q.704 2.4.2
+     * Q.711 "Table 18" and 7.2.4
+     * Q.714 "Figure D.4"
+     * Hence, assign it next value available as per ITU Q.704 15.17.5: 3:
+     */
+    const integer mtp_status_cause := 3;
+    var template (omit) integer congestion_level := omit;
     if (tsp_logVerbose) {
-      log("Received M3UA_SCON -> discard");
+      log("Received M3UA_SCON -> MTP-STATUS.ind");
+    }
+    aff_pcs := pl_PDU_M3UA.m3UA_SCON.messageParameters.affected_Point_Codes.pointCodes;
+    if (ispresent(pl_PDU_M3UA.m3UA_SCON.messageParameters.congestion_Indicators)) {
+      congestion_level := oct2int(pl_PDU_M3UA.m3UA_SCON.messageParameters.congestion_Indicators.congestionLevel);
+    }
+    for (var integer i := 0; i < lengthof(aff_pcs); i := i + 1) {
+      if (aff_pcs[i].mask != '00'O) {
+        /* TODO: Submit one MTP-STATUS for each point code matching the mask. */
+        log("Received M3UA_SCON -> Affected Point Code ", aff_pcs[i], ", discarded due to unsupported mask");
+        continue;
+      }
+      MTP3_SP_PORT.send(ts_ASP_MTP3_STATUS(oct2int(aff_pcs[i].affected_Point_Code),
+                                           mtp_status_cause,
+                                           congestion_level := congestion_level));
     }
   }
   else if (ischosen(pl_PDU_M3UA.m3UA_DUPU)) {
     if (tsp_logVerbose) {
-      log("Received M3UA_DUPU -> discard");
+      log("Received M3UA_DUPU -> MTP-STATUS.ind");
+    }
+    aff_pcs := pl_PDU_M3UA.m3UA_DUPU.messageParameters.affected_Point_Codes.pointCodes;
+    for (var integer i := 0; i < lengthof(aff_pcs); i := i + 1) {
+      if (aff_pcs[i].mask != '00'O) {
+        /* TODO: Submit one MTP-STATUS for each point code matching the mask. */
+        log("Received M3UA_DUPU -> Affected Point Code ", aff_pcs[i], ", discarded due to unsupported mask");
+        continue;
+      }
+      MTP3_SP_PORT.send(ts_ASP_MTP3_STATUS(oct2int(aff_pcs[i].affected_Point_Code),
+                                           oct2int(pl_PDU_M3UA.m3UA_DUPU.messageParameters.user_Cause.cause),
+                                           oct2int(pl_PDU_M3UA.m3UA_DUPU.messageParameters.user_Cause.user)));
     }
   }
   else if (ischosen(pl_PDU_M3UA.m3UA_DRST)) {
